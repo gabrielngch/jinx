@@ -1,0 +1,2 @@
+# vi
+Variational inference everything
