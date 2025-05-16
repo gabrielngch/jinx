@@ -6,7 +6,7 @@ from torch import nn, Tensor
 from jinx import Model
 
 class OLSSetup(nn.Module):
-    """ OLS with variational inference, fitting y ~ N(Xb + e, sigma^2) """
+    """ Setup of the OLS problem y = Xb + e using pytorch parameters. """
 
     def __init__(self: Self, in_features: int, out_features: int = 1, prior_var: float = 1.0, lr: float = 1e-2) -> None:
         super().__init__()
@@ -51,13 +51,24 @@ class OLSSetup(nn.Module):
         return y, b, e
 
     def elbo(self: Self, X: Tensor, y: Tensor, n_samples: int = 1) -> float:
+        """
+        Compute the ELBO for the OLS problem.
+
+        Args:
+            X: The input data tensor.
+            y: The output data tensor.
+            n_samples: The number of samples to use for the ELBO.
+
+        Returns:
+            elbo: The ELBO value.
+        """
         N = X.shape[0]
         recon = 0.0
         kl = 0.0
         noise = torch.exp(self.log_noise_var)
 
         for _ in range(n_samples):
-            y_pred, b, e = self.forward(X)
+            y_pred, _, _ = self.forward(X)
             recon += -0.5 * N * torch.log(2 * torch.pi * noise) - 0.5 * torch.sum((y - y_pred) ** 2) / noise
 
             kl_b = 0.5 * torch.sum(
@@ -76,6 +87,13 @@ class OLSSetup(nn.Module):
         return recon - kl
 
     def step(self: Self, X: Tensor, y: Tensor, n_samples: int = 1) -> None:
+        """
+        Perform a single step of the optimisation.
+
+        Args:
+            X: The input data tensor.
+            y: The output data tensor.
+        """
         self.optimiser.zero_grad()
         elbo_val = self.elbo(X, y, n_samples)
 
@@ -86,6 +104,7 @@ class OLSSetup(nn.Module):
         return elbo_val.item()
 
 class LinearRegression(Model):
+    """ Linear regression with variational inference. """
     def __init__(
             self: Self, 
             in_features: int, 
@@ -97,8 +116,17 @@ class LinearRegression(Model):
         self.model = OLSSetup(in_features, out_features, prior_var, lr)
         self.mc_samples = mc_samples
 
-    def update(self: Self, X: Tensor, y: Tensor) -> None:
+    def update(self: Self, X: Tensor, y: Tensor) -> float:
+        """
+        Perform a single step of the optimisation and return the predicted y.
+
+        Args:
+            X: The input data tensor.
+            y: The output data tensor.
+        """
         self.model.step(X, y, self.mc_samples)
+        y_pred, _, _ = self.model.forward(X)
+        return y_pred
 
     @property
     def weight_posterior(self: Self) -> dict[str, Tensor]:
