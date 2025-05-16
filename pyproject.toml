@@ -1,0 +1,14 @@
+[project]
+name = "jinx"
+version = "0.1.0"
+description = "Variational inference everything"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.2.5",
+    "torch>=2.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
