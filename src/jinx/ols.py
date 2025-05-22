@@ -77,7 +77,7 @@ class OLSSetup(nn.Module):
             )
             kl_e = 0.5 * torch.sum(  
                 (torch.exp(self.e_logvar) + self.e_mu.pow(2.0)) / self.prior_var
-                - 1 - self.e_logvar + torch.log(torch.tensor(self.prior_var))
+                - 1.0 - self.e_logvar + torch.log(torch.tensor(self.prior_var))
             )
             kl += kl_b + kl_e
 

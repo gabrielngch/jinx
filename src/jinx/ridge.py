@@ -34,8 +34,25 @@ class RidgeSetup(nn.Module):
         
         self.penalty = penalty
 
+        if self.penalty >= 0:
+            raise ValueError("Penalty should be greater or equal to 0.")
+
         self.optimiser = torch.optim.Adam(self.parameters(), lr=lr)
 
     def forward(self: Self, X: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """ Forward pass of the model. """
+        eps_b = torch.rand_like(self.b_mu)
+        b = self.b_mu + torch.exp(self.b_logvar) * eps_b
+
+        eps_e = torch.rand_like(self.e_mu)
+        e = self.e_mu + torch.exp(self.e_logvar) * eps_e
+
+        y = X.matmul(b) + e
+
+        return y, b, e
+
+    def elbo(self: Self, X: Tensor, y: Tensor, n_samples: int = 1) -> float:
+        """ Compute the ELBO for the model. """
         pass
+
+    
